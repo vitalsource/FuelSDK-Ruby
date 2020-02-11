@@ -35,7 +35,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =end
 require 'securerandom'
-module FuelSDK
+module MarketingCloudSDK
 	class Response
 		# not doing accessor so user, can't update these values from response.
 		# You will see in the code some of these
@@ -76,20 +76,22 @@ module FuelSDK
 
 	class Client
 	attr_accessor :debug, :access_token, :auth_token, :internal_token, :refresh_token,
-		:id, :secret, :signature, :package_name, :package_folders, :parent_folders, :auth_token_expiration, :request_token_url
+		:id, :secret, :signature, :base_api_url, :package_name, :package_folders, :parent_folders, :auth_token_expiration,
+		:request_token_url, :soap_endpoint, :use_oAuth2_authentication, :account_id, :scope, :application_type, :authorization_code, :redirect_URI
 
-	include FuelSDK::Soap
-	include FuelSDK::Rest
+	include MarketingCloudSDK::Soap
+	include MarketingCloudSDK::Rest
 
 		def jwt= encoded_jwt
 			raise 'Require app signature to decode JWT' unless self.signature
-			decoded_jwt = JWT.decode(encoded_jwt, self.signature, true).first
+			decoded_jwt = JWT.decode(encoded_jwt, self.signature, true)
+			decoded_jwt_first = decoded_jwt.first
 
-			self.auth_token = decoded_jwt['request']['user']['oauthToken']
-			self.internal_token = decoded_jwt['request']['user']['internalOauthToken']
-			self.refresh_token = decoded_jwt['request']['user']['refreshToken']
-			self.auth_token_expiration = Time.new + decoded_jwt['request']['user']['expiresIn']
-			self.package_name = decoded_jwt['request']['application']['package']
+			self.auth_token = decoded_jwt_first['request']['user']['oauthToken']
+			self.internal_token = decoded_jwt_first['request']['user']['internalOauthToken']
+			self.refresh_token = decoded_jwt_first['request']['user']['refreshToken']
+			self.auth_token_expiration = Time.new + decoded_jwt_first['request']['user']['expiresIn']
+			self.package_name = decoded_jwt_first['request']['application']['package']
 		end
 
 		def initialize(params={}, debug=false)
@@ -100,18 +102,66 @@ module FuelSDK
         self.id = client_config["id"]
         self.secret = client_config["secret"]
         self.signature = client_config["signature"]
+				self.base_api_url = !(client_config["base_api_url"].to_s.strip.empty?) ? client_config["base_api_url"] : 'https://www.exacttargetapis.com'
+				self.request_token_url = client_config["request_token_url"]
+				self.soap_endpoint = client_config["soap_endpoint"]
+				self.use_oAuth2_authentication = client_config["use_oAuth2_authentication"]
+				self.account_id = client_config["account_id"]
+				self.scope = client_config["scope"]
+				self.application_type = client_config["application_type"]
+				self.authorization_code = client_config["authorization_code"]
+				self.redirect_URI = client_config["redirect_URI"]
 			end
 
-      self.request_token_url = params['request_token_url'] ? params['request_token_url'] : 'https://auth.exacttargetapis.com/v1/requestToken'
+			# Set a default value in case no 'client' params is sent
+			if (!self.base_api_url)
+				self.base_api_url =  'https://www.exacttargetapis.com'
+			end
+
+			if (self.request_token_url.to_s.strip.empty?)
+				if(use_oAuth2_authentication == true)
+					raise 'request_token_url (Auth TSE) is mandatory when using OAuth2 authentication'
+				else
+					self.request_token_url =  'https://auth.exacttargetapis.com/v1/requestToken'
+				end
+			end
+
+			if application_type.to_s.strip.empty?
+				self.application_type = 'server'
+			end
+
+			if ['web', 'public'].include? application_type
+				if authorization_code.to_s.strip.empty? or redirect_URI.to_s.strip.empty?
+					raise 'authorization_code or redirect_URI is null: For Public/Web Apps, the authorization_code and redirect_URI must be passed when instantiating Client'
+				end
+			end
+
+			if application_type == 'public'
+				if id.to_s.strip.empty?
+					raise 'id is null: id must be passed when instantiating Client'
+				end
+			else
+				if id.to_s.strip.empty? or secret.to_s.strip.empty?
+					raise 'id and secret must pe passed when instantiating Client'
+				end
+			end
+
 			self.jwt = params['jwt'] if params['jwt']
 			self.refresh_token = params['refresh_token'] if params['refresh_token']
 
 			self.wsdl = params["defaultwsdl"] if params["defaultwsdl"]
+
+			self.refresh
 		end
 
 		def refresh force=false
 			@refresh_mutex.synchronize do
-				raise 'Require Client Id and Client Secret to refresh tokens' unless (id && secret)
+
+				if (self.use_oAuth2_authentication == true)
+					self.refreshWithOAuth2(force)
+					return
+				end
+
 				#If we don't already have a token or the token expires within 5 min(300 seconds)
 				if (self.access_token.nil? || Time.new + 300 > self.auth_token_expiration || force) then
 				payload = Hash.new.tap do |h|
@@ -140,12 +190,74 @@ module FuelSDK
 			end
 		end
 
+	def refreshWithOAuth2 force=false
+		#If we don't already have a token or the token expires within 5 min(300 seconds)
+		if (self.access_token.nil? || Time.new + 300 > self.auth_token_expiration || force) then
+
+			payload = createPayload
+
+			options = Hash.new.tap do |h|
+				h['data'] = payload
+				h['content_type'] = 'application/json'
+			end
+
+			auth_endpoint = request_token_url + '/v2/token'
+
+			response = post(auth_endpoint, options)
+			raise "Unable to refresh token: #{response['message']}" unless response.has_key?('access_token')
+
+			self.access_token = response['access_token']
+			self.auth_token_expiration = Time.new + response['expires_in']
+			self.soap_endpoint = response['soap_instance_url'] + 'service.asmx'
+			self.base_api_url = response['rest_instance_url']
+
+			if response.has_key?('refresh_token')
+				self.refresh_token = response['refresh_token']
+			end
+
+			return true
+		else
+			return false
+		end
+	end
+
+	def createPayload
+		payload = Hash.new.tap do |h|
+			h['client_id'] = id
+
+			if application_type != 'public'
+				h['client_secret'] = secret
+			end
+
+			if !refresh_token.to_s.strip.empty?
+				h['grant_type'] = 'refresh_token'
+				h['refresh_token'] = refresh_token
+			elsif ['web', 'public'].include? application_type
+				h['grant_type'] = 'authorization_code'
+				h['code'] = authorization_code
+				h['redirect_uri'] = redirect_URI
+			else
+				h['grant_type'] = 'client_credentials'
+			end
+
+			unless account_id.to_s.strip.empty?
+				h['account_id'] = account_id
+			end
+
+			unless scope.to_s.strip.empty?
+				h['scope'] = scope
+			end
+		end
+
+		payload
+	end
+
 		def refresh!
 			refresh true
 		end
 
 		def AddSubscriberToList(email, ids, subscriber_key = nil)
-			s = FuelSDK::Subscriber.new
+			s = MarketingCloudSDK::Subscriber.new
 			s.client = self
 			lists = ids.collect{|id| {'ID' => id}}
 			s.properties = {"EmailAddress" => email, "Lists" => lists}
@@ -161,7 +273,7 @@ module FuelSDK
 		end
 
 		def CreateDataExtensions(definitions)
-			de = FuelSDK::DataExtension.new
+			de = MarketingCloudSDK::DataExtension.new
 			de.client = self
 			de.properties = definitions
 			de.post
@@ -245,7 +357,7 @@ module FuelSDK
 			import.properties["CustomerKey"] = SecureRandom.uuid
 			import.properties["Description"] = "SDK Generated Import"
 			import.properties["AllowErrors"] = "true"
-			import.properties["DestinationObject"] = {"ObjectID"=>dataExtensionCustomerKey}
+			import.properties["DestinationObject"] = {"CustomerKey"=>dataExtensionCustomerKey}
 			import.properties["FieldMappingType"] = "InferFromColumnHeadings"
 			import.properties["FileSpec"] = fileName
 			import.properties["FileType"] = "CSV"

@@ -34,7 +34,7 @@ WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWIS
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 =end
 
-module FuelSDK
+module MarketingCloudSDK
 	module Objects
 		module Soap
 			module Read
@@ -373,7 +373,7 @@ module FuelSDK
 	class TriggeredSend < Objects::Base
 		include Objects::Soap::Read
 		include Objects::Soap::CUD
-		attr_accessor :folder_id, :subscribers
+		attr_accessor :folder_id, :subscribers, :attributes
 		def id
 			'TriggeredSendDefinition'
 		end
@@ -390,11 +390,11 @@ module FuelSDK
 			if self.properties.is_a? Array then
 				tscall = []
 				self.properties.each{ |p|
-					tscall.push({"TriggeredSendDefinition" => {"CustomerKey" => p["CustomerKey"]}, "Subscribers" => p["Subscribers"]})
+					tscall.push({"TriggeredSendDefinition" => {"CustomerKey" => p["CustomerKey"]}, "Subscribers" => p["Subscribers"], "Attributes" => p["Attributes"]})
 				}
 			else
-				tscall = {"TriggeredSendDefinition" => self.properties, "Subscribers" => @subscribers}
-			end
+				tscall = {"TriggeredSendDefinition" => self.properties, "Subscribers" => @subscribers, "Attributes" => @attributes }
+      end
 			client.soap_post 'TriggeredSend', tscall
 		end
 	end
@@ -505,7 +505,7 @@ module FuelSDK
 						unless explicit_properties(o)
 							o.each do |k, v|
 								next if k == 'CustomerKey'
-								formatted.concat FuelSDK.format_name_value_pairs k => v
+								formatted.concat MarketingCloudSDK.format_name_value_pairs k => v
 								o.delete k
 							end
 							o['Keys'] = {'Key' => formatted }
@@ -515,7 +515,7 @@ module FuelSDK
 					formatted = []
 					d.each do |k, v|
 						next if k == 'CustomerKey'
-						formatted.concat FuelSDK.format_name_value_pairs k => v
+						formatted.concat MarketingCloudSDK.format_name_value_pairs k => v
 						d.delete k
 					end
 					d['CustomerKey'] = customer_key
@@ -537,7 +537,7 @@ module FuelSDK
 						unless explicit_properties(o)
 							o.each do |k, v|
 								next if k == 'CustomerKey'
-								formatted.concat FuelSDK.format_name_value_pairs k => v
+								formatted.concat MarketingCloudSDK.format_name_value_pairs k => v
 								o.delete k
 							end
 							o['Properties'] = {'Property' => formatted }
@@ -546,7 +546,7 @@ module FuelSDK
 				else
 					formatted = []
 					d.each do |k, v|
-						formatted.concat FuelSDK.format_name_value_pairs k => v
+						formatted.concat MarketingCloudSDK.format_name_value_pairs k => v
 						d.delete k
 					end
 					d['CustomerKey'] = customer_key
@@ -640,7 +640,7 @@ module FuelSDK
 		end
 
 		def id
-			"https://www.exacttargetapis.com/hub/v1/campaigns/%{id}"
+			self.client.base_api_url + '/hub/v1/campaigns/%{id}'
 		end
 
 		class Asset < Objects::Base
@@ -654,7 +654,7 @@ module FuelSDK
 			end
 
 			def id
-				'https://www.exacttargetapis.com/hub/v1/campaigns/%{id}/assets/%{assetId}'
+				self.client.base_api_url + '/hub/v1/campaigns/%{id}/assets/%{assetId}'
 			end
 		end
 	end

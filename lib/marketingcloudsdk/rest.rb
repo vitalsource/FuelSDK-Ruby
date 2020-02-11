@@ -34,10 +34,10 @@ WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWIS
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 =end
 
-module FuelSDK
+module MarketingCloudSDK
   module Rest
 
-    include FuelSDK::Targeting
+    include MarketingCloudSDK::Targeting
 
     def rest_client
       self
@@ -100,22 +100,18 @@ module FuelSDK
     end
 
     private
-      def rest_request action, url, options={}		
-        retried = false
-        begin
-          #Try to refresh the token and if we do then we need to regenerate the header as well. 
-          self.refresh 
-          (options['params'] ||= {}).merge! 'access_token' => access_token
-          rsp = rest_client.send(action, url, options)
-          raise 'Unauthorized' if rsp.message == 'Unauthorized'
-        rescue
-          raise if retried
-          self.refresh! # ask for forgiveness not, permission
-          retried = true
-          retry
+      def rest_request action, url, options={}
+        #Try to refresh the token and if we do then we need to regenerate the header as well.
+        self.refresh
+        (options['params'] ||= {})
+
+        if access_token
+          options['access_token'] = access_token
         end
-          rsp
-      rescue
+
+        rsp = rest_client.send(action, url, options)
+        raise 'Unauthorized' if rsp.message == 'Unauthorized'
+
         rsp
       end
   end

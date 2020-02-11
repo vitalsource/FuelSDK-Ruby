@@ -34,7 +34,7 @@ WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWIS
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 =end
 
-module FuelSDK
+module MarketingCloudSDK
   module_function
     def format_name_value_pairs attributes
       attrs = []

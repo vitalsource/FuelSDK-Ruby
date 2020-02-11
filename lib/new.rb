@@ -34,7 +34,7 @@ WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWIS
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 =end
 
-require "fuelsdk/version"
+require "marketingcloudsdk/version"
 
 require 'rubygems'
 require 'open-uri'
@@ -49,7 +49,7 @@ def indifferent_access key, hash
   hash[key.to_sym] || hash[key.to_s]
 end
 
-module FuelSDK
+module MarketingCloudSDK
 
   class Soap
     def client
@@ -1176,14 +1176,14 @@ module FuelSDK
   end
 
   class ET_TriggeredSend < ET_CUDSupport
-    attr_accessor :subscribers
+    attr_accessor :subscribers, :attributes
     def initialize
       super
       @obj = 'TriggeredSendDefinition'
     end
 
     def send
-      @tscall = {"TriggeredSendDefinition" => @props, "Subscribers" => @subscribers}
+      @tscall = {"TriggeredSendDefinition" => @props, "Subscribers" => @subscribers, "Attributes" => @attributes}
       ET_Post.new(@authStub, "TriggeredSend", @tscall)
     end
   end

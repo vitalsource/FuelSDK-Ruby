@@ -34,41 +34,41 @@ WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWIS
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 =end
 
-require "fuelsdk/version"
+require "marketingcloudsdk/version"
 
 require 'rubygems'
 require 'date'
 require 'jwt'
 
-module FuelSDK
-  require 'fuelsdk/utils'
-  autoload :HTTPRequest, 'fuelsdk/http_request'
-  autoload :Targeting, 'fuelsdk/targeting'
-  autoload :Soap, 'fuelsdk/soap'
-  autoload :Rest, 'fuelsdk/rest'
-  require 'fuelsdk/client'
-  require 'fuelsdk/objects'
+module MarketingCloudSDK
+  require 'marketingcloudsdk/utils'
+  autoload :HTTPRequest, 'marketingcloudsdk/http_request'
+  autoload :Targeting, 'marketingcloudsdk/targeting'
+  autoload :Soap, 'marketingcloudsdk/soap'
+  autoload :Rest, 'marketingcloudsdk/rest'
+  require 'marketingcloudsdk/client'
+  require 'marketingcloudsdk/objects'
 end
 
 # backwards compatability
-ET_Client = FuelSDK::Client
-ET_BounceEvent = FuelSDK::BounceEvent
-ET_ClickEvent = FuelSDK::ClickEvent
-ET_ContentArea = FuelSDK::ContentArea
-ET_DataExtension = FuelSDK::DataExtension
-ET_DataFolder = FuelSDK::DataFolder
-ET_Folder = FuelSDK::Folder
-ET_Email = FuelSDK::Email
-ET_List = FuelSDK::List
-ET_OpenEvent = FuelSDK::OpenEvent
-ET_SentEvent = FuelSDK::SentEvent
-ET_Subscriber = FuelSDK::Subscriber
-ET_UnsubEvent = FuelSDK::UnsubEvent
-ET_TriggeredSend = FuelSDK::TriggeredSend
-ET_Campaign = FuelSDK::Campaign
-ET_Get = FuelSDK::Get
-ET_Post = FuelSDK::Post
-ET_Delete = FuelSDK::Delete
-ET_Patch = FuelSDK::Patch
-ET_ProfileAttribute = FuelSDK::ProfileAttribute
-ET_Import = FuelSDK::Import
+ET_Client = MarketingCloudSDK::Client
+ET_BounceEvent = MarketingCloudSDK::BounceEvent
+ET_ClickEvent = MarketingCloudSDK::ClickEvent
+ET_ContentArea = MarketingCloudSDK::ContentArea
+ET_DataExtension = MarketingCloudSDK::DataExtension
+ET_DataFolder = MarketingCloudSDK::DataFolder
+ET_Folder = MarketingCloudSDK::Folder
+ET_Email = MarketingCloudSDK::Email
+ET_List = MarketingCloudSDK::List
+ET_OpenEvent = MarketingCloudSDK::OpenEvent
+ET_SentEvent = MarketingCloudSDK::SentEvent
+ET_Subscriber = MarketingCloudSDK::Subscriber
+ET_UnsubEvent = MarketingCloudSDK::UnsubEvent
+ET_TriggeredSend = MarketingCloudSDK::TriggeredSend
+ET_Campaign = MarketingCloudSDK::Campaign
+ET_Get = MarketingCloudSDK::Get
+ET_Post = MarketingCloudSDK::Post
+ET_Delete = MarketingCloudSDK::Delete
+ET_Patch = MarketingCloudSDK::Patch
+ET_ProfileAttribute = MarketingCloudSDK::ProfileAttribute
+ET_Import = MarketingCloudSDK::Import
